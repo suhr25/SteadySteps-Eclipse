@@ -1,31 +1,26 @@
-// --- 1. STATE ---
 let state = {
     user: localStorage.getItem('eclipse_user') || null,
     tasks: JSON.parse(localStorage.getItem('eclipse_tasks')) || [], 
     history: JSON.parse(localStorage.getItem('eclipse_history')) || {}
 };
-let activeTimer = null; // { id }
+let activeTimer = null; 
 let timerInt = null;
 let topicChart = null, velocityChart = null;
 
-// --- 2. INIT ---
 document.addEventListener('DOMContentLoaded', () => {
     if(state.user) enterApp();
     setInterval(updateClock, 1000);
     updateHeatmap();
 });
 
-// --- 3. CLOCK & ZEN MODE ---
 function updateClock() {
     const now = new Date();
     const timeStr = now.toLocaleTimeString('en-US', {hour12:false});
     const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase();
     
-    // Dashboard
     const dashClock = document.getElementById('clock');
     if(dashClock) dashClock.innerText = timeStr;
 
-    // Zen Mode
     const zenClock = document.getElementById('zen-clock');
     if(zenClock) zenClock.innerText = timeStr;
     const zenDate = document.getElementById('zen-date');
@@ -39,7 +34,6 @@ function toggleZenMode() {
     if (zen.classList.contains('hidden')) {
         zen.classList.remove('hidden');
         app.classList.add('hidden');
-        // Check if timer is running to show pill
         if(activeTimer) {
             const t = state.tasks.find(x => x.id === activeTimer);
             if(t) {
@@ -57,7 +51,6 @@ function toggleAudio() {
     document.getElementById('audio-container').classList.toggle('hidden');
 }
 
-// --- 4. AUTH ---
 document.getElementById('login-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const u = document.getElementById('username').value;
@@ -85,7 +78,6 @@ function setView(id) {
     if(id === 'analytics') renderAnalyticsCharts();
 }
 
-// --- 5. TASK ENGINE ---
 function addTask() {
     const txt = document.getElementById('task-text').value;
     const cat = document.getElementById('task-cat').value;
@@ -139,7 +131,6 @@ function updateHistory(date) {
     state.history[date] = { done, total: dayTasks.length };
 }
 
-// --- 6. TIMER & PERCENTAGE ---
 function toggleTimer(id) {
     if(activeTimer === id) stopTimer();
     else {
@@ -154,17 +145,16 @@ function startTimer(id) {
         const t = state.tasks.find(x => x.id === id);
         if(t) {
             t.elapsed++;
-            // Dashboard Update
-            document.getElementById(`time-${id}`).innerText = fmtTime(t.elapsed);
             
-            // Progress & Percentage
+            const timerEl = document.getElementById(`time-${id}`);
+            if(timerEl) timerEl.innerText = fmtTime(t.elapsed);
+            
             const pct = Math.min((t.elapsed / t.duration) * 100, 100);
             const bar = document.getElementById(`prog-${id}`);
             const badge = document.getElementById(`pct-${id}`);
             if(bar) bar.style.width = `${pct}%`;
             if(badge) badge.innerText = `${Math.floor(pct)}%`;
 
-            // Zen View Update
             const zenTime = document.getElementById('zen-task-timer');
             if(zenTime && !document.getElementById('view-zen').classList.contains('hidden')) {
                 zenTime.innerText = fmtTime(t.elapsed);
@@ -191,7 +181,6 @@ function fmtTime(s) {
     return `${m}:${sec}`;
 }
 
-// --- 7. RENDER ---
 function renderTasks() {
     const list = document.getElementById('task-list');
     list.innerHTML = '';
@@ -228,7 +217,6 @@ function renderTasks() {
     });
 }
 
-// --- 8. ANALYTICS ---
 function updateStats() {
     const done = state.tasks.filter(t=>t.completed).length;
     const pct = state.tasks.length ? Math.round((done/state.tasks.length)*100) : 0;
@@ -236,7 +224,6 @@ function updateStats() {
 }
 
 function renderAnalyticsCharts() {
-    // Topic Chart
     const ctx1 = document.getElementById('topicChart').getContext('2d');
     if(topicChart) topicChart.destroy();
     topicChart = new Chart(ctx1, {
@@ -255,7 +242,6 @@ function renderAnalyticsCharts() {
         options: { plugins: { legend: { labels: { color: 'white' } } } }
     });
 
-    // Weekly Velocity (Mock Data + Live Today)
     const ctx2 = document.getElementById('velocityChart').getContext('2d');
     if(velocityChart) velocityChart.destroy();
     const todayDone = state.tasks.filter(t=>t.completed).length;
@@ -292,7 +278,6 @@ function renderCalendar() {
     }
 }
 
-// --- 9. AI ---
 function generateSchedule(mode) {
     const templates = {
         student: [{text:"Math", cat:"study", s:"09:00", e:"11:00"}, {text:"Gym", cat:"health", s:"17:00", e:"18:00"}],
