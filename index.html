@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Steady Steps | Eclipse</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <title>Steady Steps | Stable OS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -15,29 +15,40 @@
     <div id="mobile-overlay" onclick="toggleSidebar()"></div>
 
     <section id="auth-screen" class="full-screen">
-        <div class="glass auth-box">
-            <h1 style="color:var(--neon-blue); margin-bottom: 5px;">STEADY STEPS</h1>
-            <p style="color:var(--text-muted);">ECLIPSE</p>
+        <div class="glass-card auth-box">
+            <h1 class="logo-text">STEADY STEPS</h1>
+            <p style="color:var(--text-muted); margin-bottom:40px;">System Ready v12.5</p>
             <form id="login-form">
-                <input type="text" id="username" class="auth-input" placeholder="Enter Workspace Name" required autocomplete="off">
-                <button type="submit" class="btn-large">Enter The Grid!!</button>
+                <div class="input-group">
+                    <i class="fa-solid fa-user-astronaut"></i>
+                    <input type="text" id="username" placeholder="Identify User" required autocomplete="off">
+                </div>
+                <button type="submit" class="btn-primary">Enter The Grid</button>
             </form>
         </div>
     </section>
 
     <section id="view-zen" class="hidden">
         <div class="zen-bg"></div>
-        <div class="zen-exit" onclick="toggleZenMode()"><i class="fa-solid fa-compress"></i></div>
-        
-        <div class="zen-clock" id="zen-clock">00:00</div>
-        <div class="zen-date" id="zen-date">LOADING...</div>
+        <div class="zen-ui">
+            <div class="zen-exit" onclick="toggleZenMode()">
+                <i class="fa-solid fa-compress"></i> <span>EXIT FOCUS</span>
+            </div>
+            
+            <div class="zen-center">
+                <div class="zen-clock" id="zen-clock">00:00</div>
+                <div class="zen-date" id="zen-date">LOADING...</div>
+            </div>
 
-        <div id="zen-active-container" class="hidden">
-            <div class="zen-active-task">
-                <i class="fa-solid fa-bolt" style="color:var(--neon-orange); font-size:1.5rem;"></i>
-                <div style="text-align:left;">
-                    <div class="zen-task-title" id="zen-task-name">Deep Work</div>
-                    <div class="zen-task-time" id="zen-task-timer">00:00</div>
+            <div id="zen-active-container" class="hidden">
+                <div class="zen-active-task">
+                    <div class="pulse-ring"></div>
+                    <div class="zen-icon"><i class="fa-solid fa-bolt"></i></div>
+                    <div class="zen-details">
+                        <div class="zen-label">CURRENT OBJECTIVE</div>
+                        <div class="zen-task-title" id="zen-task-name">Deep Work</div>
+                    </div>
+                    <div class="zen-timer mono" id="zen-task-timer">00:00</div>
                 </div>
             </div>
         </div>
@@ -47,29 +58,45 @@
         
         <aside class="sidebar" id="sidebar">
             <div class="brand">
-                <span><i class="fa-solid fa-layer-group"></i> STEADY STEPS</span>
-                <i class="fa-solid fa-xmark mobile-close-btn" onclick="toggleSidebar()"></i>
+                <div class="brand-logo"><i class="fa-solid fa-layer-group"></i></div>
+                <div class="brand-name">STEADY</div>
+                <i class="fa-solid fa-xmark mobile-close" onclick="toggleSidebar()"></i>
             </div>
             
-            <div class="nav-item active" onclick="setView('dashboard')"><i class="fa-solid fa-grid-2"></i> Dashboard</div>
-            <div class="nav-item" onclick="setView('analytics')"><i class="fa-solid fa-chart-pie"></i> Analytics Pro</div>
-            <div class="nav-item" onclick="setView('scheduler')"><i class="fa-solid fa-brain"></i> AI Planner</div>
-            <div class="nav-item" onclick="toggleZenMode()" style="color:var(--neon-purple)"><i class="fa-solid fa-expand"></i> Zen Mode</div>
-            <div class="nav-item" onclick="logout()" style="margin-top:auto; color:var(--danger)"><i class="fa-solid fa-power-off"></i> Logout</div>
+            <div class="nav-links">
+                <div class="nav-item active" onclick="setView('dashboard')">
+                    <i class="fa-solid fa-grid-2"></i> <span>Dashboard</span>
+                </div>
+                <div class="nav-item" onclick="setView('analytics')">
+                    <i class="fa-solid fa-chart-pie"></i> <span>Analytics</span>
+                </div>
+                <div class="nav-item" onclick="setView('scheduler')">
+                    <i class="fa-solid fa-brain"></i> <span>AI Planner</span>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="nav-item zen-btn" onclick="toggleZenMode()">
+                    <i class="fa-solid fa-expand"></i> <span>Zen Mode</span>
+                </div>
+                <div class="nav-item logout-btn" onclick="logout()">
+                    <i class="fa-solid fa-power-off"></i> <span>Logout</span>
+                </div>
+            </div>
         </aside>
 
         <div class="main-wrapper">
             <header>
-                <div style="display:flex; align-items:center; gap:15px;">
+                <div class="header-left">
                     <i class="fa-solid fa-bars mobile-menu-btn" onclick="toggleSidebar()"></i>
-                    <div>
+                    <div class="greeting-box">
                         <h2 id="greeting">Welcome</h2>
-                        <p style="color:var(--text-muted); font-size:0.9rem;" class="desktop-only">Analytics Engine Online.</p>
+                        <div class="status-badge"><div class="dot"></div> ONLINE</div>
                     </div>
                 </div>
-                <div style="text-align:right">
-                    <div style="font-family:'Space Mono'; font-size:1.2rem;" id="clock">00:00</div>
-                    <div style="color:var(--neon-blue); font-size:0.7rem;">LIVE</div>
+                <div class="clock-box">
+                    <div class="mono time-display" id="clock">00:00</div>
+                    <div class="live-tag">LIVE</div>
                 </div>
             </header>
 
@@ -77,86 +104,117 @@
                 
                 <div id="view-dashboard">
                     <div class="dashboard-grid">
-                        <div class="glass" style="padding: 20px;">
-                            <h3 style="margin-bottom:20px;">Active Objectives</h3>
+                        <div class="main-column">
+                            <div class="section-title">
+                                <h3>Command Center</h3>
+                                <span class="badge-pill" id="pending-count">0 Objectives</span>
+                            </div>
                             
-                            <div class="task-input-bar">
-                                <input type="text" id="task-text" class="text-in" placeholder="New Task...">
-                                <div class="mobile-row">
-                                    <select id="task-cat" class="cat-select">
-                                        <option value="work">Work</option>
-                                        <option value="study">Study</option>
-                                        <option value="health">Health</option>
-                                    </select>
-                                    <button onclick="addTask()" class="add-btn"><i class="fa-solid fa-plus"></i></button>
+                            <div class="glass-card command-bar">
+                                <div class="command-top">
+                                    <input type="text" id="task-text" placeholder="Initialize new objective...">
+                                    <button onclick="addTask()" class="btn-add"><i class="fa-solid fa-plus"></i></button>
                                 </div>
-                                <div class="mobile-row" style="margin-top:10px; width:100%; gap:10px;">
-                                    <input type="time" id="task-start" class="time-in" style="flex:1">
-                                    <span style="color:var(--text-muted); align-self:center;">to</span>
-                                    <input type="time" id="task-end" class="time-in" style="flex:1">
+                                <div class="command-bottom">
+                                    <div class="select-wrapper">
+                                        <select id="task-cat">
+                                            <option value="work">Work</option>
+                                            <option value="study">Study</option>
+                                            <option value="health">Health</option>
+                                        </select>
+                                        <i class="fa-solid fa-caret-down"></i>
+                                    </div>
+                                    <div class="time-wrapper">
+                                        <input type="time" id="task-start">
+                                        <span>to</span>
+                                        <input type="time" id="task-end">
+                                    </div>
                                 </div>
                             </div>
 
                             <ul id="task-list" class="task-list"></ul>
                         </div>
 
-                        <div style="display:flex; flex-direction:column; gap:20px;">
+                        <div class="widget-column">
                             
-                            <div class="glass" style="padding:20px;">
-                                <h4 style="color:var(--text-muted); margin-bottom:5px;"><i class="fa-solid fa-headphones"></i> FOCUS AUDIO</h4>
-                                <button onclick="toggleAudio()" style="background:none; border:none; color:var(--neon-blue); cursor:pointer; font-size:0.8rem;">Show/Hide Player</button>
-                                <div id="audio-container" class="hidden" style="margin-top:10px;">
-                                    <iframe style="width:100%; height:180px; border-radius:12px; border:none;" src="https://www.youtube.com/embed/jfKfPfyJRdk?si=Yk_Cq8vKkX-3jX9_" title="Lofi Girl" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                            <div class="glass-card widget-card">
+                                <div class="widget-header">
+                                    <h4>Daily Sync</h4>
+                                    <i class="fa-solid fa-rotate"></i>
+                                </div>
+                                <div class="stat-circle-wrapper">
+                                    <div class="stat-number mono" id="daily-score">0%</div>
+                                    <svg class="progress-ring" width="120" height="120">
+                                        <circle class="bg-ring" cx="60" cy="60" r="54"></circle>
+                                        <circle class="fg-ring" id="daily-ring" cx="60" cy="60" r="54"></circle>
+                                    </svg>
                                 </div>
                             </div>
 
-                            <div class="glass" style="padding:30px; text-align:center;">
-                                <h4 style="color:var(--text-muted); margin-bottom:10px;">TODAY'S COMPLETION</h4>
-                                <div style="font-size:3.5rem; font-weight:bold; color:var(--neon-green);" id="daily-score">0%</div>
+                            <div class="glass-card widget-card">
+                                <div class="widget-header">
+                                    <h4>Focus Audio</h4>
+                                    <div class="toggle-switch">
+                                        <input type="checkbox" id="audio-toggle" onchange="toggleAudio(this)">
+                                        <label for="audio-toggle"></label>
+                                    </div>
+                                </div>
+                                <div id="audio-visuals" class="hidden">
+                                    <div class="bars"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
+                                </div>
+                                <div id="audio-container" class="hidden audio-embed">
+                                    <iframe src="https://www.youtube.com/embed/jfKfPfyJRdk?si=Yk_Cq8vKkX-3jX9_" title="Lofi Girl" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                                </div>
                             </div>
+
                         </div>
                     </div>
                 </div>
 
                 <div id="view-analytics" class="hidden">
                     <div class="analytics-grid">
-                        <div class="glass" style="padding:20px;">
-                            <h3 style="margin-bottom:20px;">Topic Distribution</h3>
-                            <div style="height:250px;"><canvas id="topicChart"></canvas></div>
+                        <div class="glass-card chart-card">
+                            <h3>Topic Distribution</h3>
+                            <div class="chart-wrap"><canvas id="topicChart"></canvas></div>
                         </div>
-                        <div class="glass" style="padding:20px;">
-                            <h3 style="margin-bottom:20px;">Weekly Velocity</h3>
-                            <div style="height:250px;"><canvas id="velocityChart"></canvas></div>
+                        <div class="glass-card chart-card">
+                            <h3>Weekly Velocity</h3>
+                            <div class="chart-wrap"><canvas id="velocityChart"></canvas></div>
                         </div>
                     </div>
-
-                    <div class="glass" style="padding: 20px; margin-top:20px;">
-                        <h3 style="margin-bottom:10px;">Percent-Wise Calendar (30 Days)</h3>
+                    <div class="glass-card wide-card">
+                        <h3>Consistency Heatmap</h3>
+                        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:20px;">Last 30 Days Activity</p>
                         <div class="calendar-wrapper" id="calendar-grid"></div>
                     </div>
                 </div>
 
                 <div id="view-scheduler" class="hidden">
-                    <div class="glass" style="padding: 30px; text-align: center; max-width: 700px; margin: 0 auto;">
-                        <h2 style="margin-bottom:10px;">Neural Persona Scheduler</h2>
-                        <p style="color:var(--text-muted); margin-bottom:30px;">Select a mode to auto-generate your day.</p>
+                    <div class="glass-card ai-center">
+                        <h2 class="glow-text">Neural Scheduler</h2>
+                        <p class="subtext">Select a persona to auto-generate your daily protocol.</p>
                         <div class="persona-grid">
                             <div onclick="generateSchedule('student')" class="persona-card">
-                                <i class="fa-solid fa-graduation-cap"></i> <h3>Student</h3>
+                                <div class="p-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+                                <h3>Scholar</h3>
+                                <span>Study & Revision</span>
                             </div>
                             <div onclick="generateSchedule('dev')" class="persona-card">
-                                <i class="fa-solid fa-code"></i> <h3>Developer</h3>
+                                <div class="p-icon"><i class="fa-solid fa-code"></i></div>
+                                <h3>Developer</h3>
+                                <span>Code & Debug</span>
                             </div>
                             <div onclick="generateSchedule('ceo')" class="persona-card">
-                                <i class="fa-solid fa-chess-queen"></i> <h3>Executive</h3>
+                                <div class="p-icon"><i class="fa-solid fa-chess-queen"></i></div>
+                                <h3>Executive</h3>
+                                <span>Strategy & Ops</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <footer class="footer">
-                    Steady Steps OS &copy; 2025 <br>
-                    Crafted by <span class="creators">Suhrid Marwah & Ashnaa Seth</span>
+                    Steady Steps OS &copy; 2025 &bull; Designed by <span class="creators">Suhrid Marwah & Ashnaa Seth</span>
                 </footer>
             </div>
         </div>
