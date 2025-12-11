@@ -1,7 +1,7 @@
 let state = {
-    user: localStorage.getItem('infinity_user') || null,
-    tasks: JSON.parse(localStorage.getItem('infinity_tasks')) || [], 
-    history: JSON.parse(localStorage.getItem('infinity_history')) || {}
+    user: localStorage.getItem('ethereal_user') || null,
+    tasks: JSON.parse(localStorage.getItem('ethereal_tasks')) || [], 
+    history: JSON.parse(localStorage.getItem('ethereal_history')) || {}
 };
 let activeTimer = null; 
 let timerInt = null;
@@ -13,31 +13,30 @@ document.addEventListener('DOMContentLoaded', () => {
     updateHeatmap();
 });
 
-// Mobile Sidebar Logic
 function toggleSidebar() {
     const sb = document.getElementById('sidebar');
-    const overlay = document.getElementById('mobile-overlay');
+    const ov = document.getElementById('mobile-overlay');
     if (sb.classList.contains('open')) {
         sb.classList.remove('open');
-        overlay.style.display = 'none';
+        ov.style.display = 'none';
     } else {
         sb.classList.add('open');
-        overlay.style.display = 'block';
+        ov.style.display = 'block';
     }
 }
 
 function updateClock() {
     const now = new Date();
-    const timeStr = now.toLocaleTimeString('en-US', {hour12:false});
-    const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase();
+    const t = now.toLocaleTimeString('en-US', {hour12:false});
+    const d = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase();
     
     const dashClock = document.getElementById('clock');
-    if(dashClock) dashClock.innerText = timeStr;
+    if(dashClock) dashClock.innerText = t;
 
     const zenClock = document.getElementById('zen-clock');
-    if(zenClock) zenClock.innerText = timeStr;
+    if(zenClock) zenClock.innerText = t;
     const zenDate = document.getElementById('zen-date');
-    if(zenDate) zenDate.innerText = dateStr;
+    if(zenDate) zenDate.innerText = d;
 }
 
 function toggleZenMode() {
@@ -60,8 +59,16 @@ function toggleZenMode() {
     }
 }
 
-function toggleAudio() {
-    document.getElementById('audio-container').classList.toggle('hidden');
+function toggleAudio(checkbox) {
+    const container = document.getElementById('audio-container');
+    const visualizer = document.getElementById('audio-visuals');
+    if (checkbox.checked) {
+        container.classList.remove('hidden');
+        visualizer.classList.remove('hidden');
+    } else {
+        container.classList.add('hidden');
+        visualizer.classList.add('hidden');
+    }
 }
 
 document.getElementById('login-form').addEventListener('submit', (e) => {
@@ -69,7 +76,7 @@ document.getElementById('login-form').addEventListener('submit', (e) => {
     const u = document.getElementById('username').value;
     if(u) {
         state.user = u;
-        localStorage.setItem('infinity_user', u);
+        localStorage.setItem('ethereal_user', u);
         enterApp();
     }
 });
@@ -77,17 +84,16 @@ document.getElementById('login-form').addEventListener('submit', (e) => {
 function enterApp() {
     document.getElementById('auth-screen').classList.add('hidden');
     document.getElementById('app-screen').classList.remove('hidden');
-    document.getElementById('greeting').innerText = `Hello, ${state.user}`;
+    document.getElementById('greeting').innerText = `Welcome, ${state.user}`;
     renderTasks();
     updateStats();
 }
-function logout() { localStorage.removeItem('infinity_user'); location.reload(); }
+function logout() { localStorage.removeItem('ethereal_user'); location.reload(); }
 
 function setView(id) {
     ['dashboard','scheduler','analytics'].forEach(v => document.getElementById('view-'+v).classList.add('hidden'));
     document.getElementById('view-'+id).classList.remove('hidden');
     
-    // Auto close sidebar on mobile
     if(window.innerWidth <= 768) toggleSidebar();
     
     if(id === 'analytics') renderAnalyticsCharts();
@@ -120,9 +126,7 @@ function toggleTask(id) {
     const t = state.tasks.find(x => x.id === id);
     if(t) {
         t.completed = !t.completed;
-        if(t.completed) {
-            try { confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } }); } catch(e){}
-        }
+        if(t.completed) try { confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } }); } catch(e){}
         updateHistory(t.date);
         save();
         renderTasks();
@@ -161,21 +165,11 @@ function startTimer(id) {
         if(t) {
             t.elapsed++;
             
-            const timerEl = document.getElementById(`time-${id}`);
-            if(timerEl) timerEl.innerText = fmtTime(t.elapsed);
-            
-            const pct = Math.min((t.elapsed / t.duration) * 100, 100);
-            const bar = document.getElementById(`prog-${id}`);
-            const badge = document.getElementById(`pct-${id}`);
-            if(bar) bar.style.width = `${pct}%`;
-            if(badge) badge.innerText = `${Math.floor(pct)}%`;
-
             const zenTime = document.getElementById('zen-task-timer');
             if(zenTime && !document.getElementById('view-zen').classList.contains('hidden')) {
                 zenTime.innerText = fmtTime(t.elapsed);
                 document.getElementById('zen-active-container').classList.remove('hidden');
                 document.getElementById('zen-task-name').innerText = t.text;
-                document.getElementById('zen-task-pct').innerText = `${Math.floor(pct)}%`;
             }
         }
     }, 1000);
@@ -199,32 +193,34 @@ function fmtTime(s) {
 function renderTasks() {
     const list = document.getElementById('task-list');
     list.innerHTML = '';
+    const pendingCount = state.tasks.filter(t => !t.completed).length;
+    document.getElementById('pending-count').innerText = `${pendingCount} Objectives`;
+
     state.tasks.forEach(t => {
         const isRunning = activeTimer === t.id;
+        const icon = isRunning ? 'fa-pause' : 'fa-play';
+        const activeClass = isRunning ? 'active-timer' : '';
         const pct = Math.min((t.elapsed / t.duration) * 100, 100);
-        const catColors = { work: 'cat-work', study: 'cat-study', health: 'cat-health' };
 
         list.innerHTML += `
-            <li class="task-item ${t.completed ? 'done' : ''} ${isRunning ? 'active-timer' : ''}">
-                <div class="task-progress-bg" id="prog-${t.id}" style="width: ${pct}%"></div>
-                <div class="task-content">
-                    <div>
-                        <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:4px;">
-                            <span class="cat-badge ${catColors[t.category]}">${t.category}</span>
-                            ${t.start} - ${t.end}
-                        </div>
-                        <div style="font-size:1.1rem; display:flex; align-items:center;">
-                            ${t.text}
-                            <span class="pct-badge" id="pct-${t.id}">${Math.floor(pct)}%</span>
-                        </div>
+            <li class="task-item ${t.completed ? 'done' : ''} ${activeClass}">
+                <div class="task-meta">
+                    <div class="task-title">${t.text}</div>
+                    <div class="meta-row">
+                        <span class="cat-tag ${t.category}">${t.category}</span>
+                        <span>${t.start} - ${t.end}</span>
+                        <span style="color:var(--neon-blue)">${Math.floor(pct)}%</span>
                     </div>
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <div class="timer-badge ${isRunning ? 'running' : ''}" onclick="toggleTimer(${t.id})">
-                            <i class="fa-solid ${isRunning ? 'fa-pause' : 'fa-play'}"></i>
-                            <span class="mono" id="time-${t.id}">${fmtTime(t.elapsed)}</span>
-                        </div>
-                        <button onclick="toggleTask(${t.id})" style="background:none; border:none; color:var(--neon-green); cursor:pointer;"><i class="fa-solid fa-check-circle"></i></button>
-                        <button onclick="deleteTask(${t.id})" style="background:none; border:none; color:var(--danger); cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
+                </div>
+                <div class="task-controls">
+                    <div class="ctrl-btn play ${isRunning ? 'active' : ''}" onclick="toggleTimer(${t.id})">
+                        <i class="fa-solid ${icon}"></i>
+                    </div>
+                    <div class="ctrl-btn check" onclick="toggleTask(${t.id})">
+                        <i class="fa-solid fa-check"></i>
+                    </div>
+                    <div class="ctrl-btn del" onclick="deleteTask(${t.id})">
+                        <i class="fa-solid fa-trash"></i>
                     </div>
                 </div>
             </li>
@@ -236,6 +232,8 @@ function updateStats() {
     const done = state.tasks.filter(t=>t.completed).length;
     const pct = state.tasks.length ? Math.round((done/state.tasks.length)*100) : 0;
     document.getElementById('daily-score').innerText = `${pct}%`;
+    const offset = 339.292 - (339.292 * pct) / 100;
+    document.getElementById('daily-ring').style.strokeDashoffset = offset;
 }
 
 function renderAnalyticsCharts() {
@@ -251,7 +249,7 @@ function renderAnalyticsCharts() {
                     state.tasks.filter(t=>t.category==='study').length,
                     state.tasks.filter(t=>t.category==='health').length
                 ],
-                backgroundColor: ['#29b6f6', '#ab47bc', '#00e676']
+                backgroundColor: ['#00f3ff', '#bc13fe', '#0aff68']
             }]
         },
         options: { plugins: { legend: { labels: { color: 'white' } } }, maintainAspectRatio: false }
@@ -265,14 +263,14 @@ function renderAnalyticsCharts() {
         data: {
             labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
             datasets: [{
-                label: 'Tasks Completed',
+                label: 'Tasks',
                 data: [5, 8, 3, 9, 6, 4, todayDone],
-                backgroundColor: '#ab47bc'
+                backgroundColor: '#bc13fe'
             }]
         },
         options: {
             maintainAspectRatio: false,
-            scales: { y: { ticks: { color: '#94a3b8' } }, x: { ticks: { color: '#94a3b8' } } },
+            scales: { y: { ticks: { color: '#8b9bb4' } }, x: { ticks: { color: '#8b9bb4' } } },
             plugins: { legend: { display: false } }
         }
     });
@@ -287,10 +285,10 @@ function renderCalendar() {
         const d = new Date(); d.setDate(d.getDate() - i);
         const dateStr = d.toISOString().split('T')[0];
         const stats = state.history[dateStr] || { done: 0, total: 0 };
-        const pct = stats.total === 0 ? 0 : Math.round((stats.done / stats.total) * 100);
+        const val = stats.total === 0 ? 0 : Math.round((stats.done / stats.total) * 100);
         
-        let cls = pct >= 80 ? 'high' : (pct >= 50 ? 'med' : (pct > 0 ? 'low' : ''));
-        grid.innerHTML += `<div class="cal-day ${cls}"><div class="cal-date">${d.getDate()}</div><div class="cal-pct">${pct}%</div></div>`;
+        let lvl = val >= 80 ? 'lvl-3' : (val >= 50 ? 'lvl-2' : (val > 0 ? 'lvl-1' : ''));
+        grid.innerHTML += `<div class="cal-day ${lvl}"><div class="date">${d.getDate()}</div><div class="val">${val}%</div></div>`;
     }
 }
 
@@ -314,6 +312,6 @@ function generateSchedule(mode) {
 }
 
 function save() { 
-    localStorage.setItem('infinity_tasks', JSON.stringify(state.tasks));
-    localStorage.setItem('infinity_history', JSON.stringify(state.history));
+    localStorage.setItem('ethereal_tasks', JSON.stringify(state.tasks));
+    localStorage.setItem('ethereal_history', JSON.stringify(state.history));
 }
