@@ -1,7 +1,7 @@
 let state = {
-    user: localStorage.getItem('eclipse_user') || null,
-    tasks: JSON.parse(localStorage.getItem('eclipse_tasks')) || [], 
-    history: JSON.parse(localStorage.getItem('eclipse_history')) || {}
+    user: localStorage.getItem('infinity_user') || null,
+    tasks: JSON.parse(localStorage.getItem('infinity_tasks')) || [], 
+    history: JSON.parse(localStorage.getItem('infinity_history')) || {}
 };
 let activeTimer = null; 
 let timerInt = null;
@@ -12,6 +12,19 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateClock, 1000);
     updateHeatmap();
 });
+
+// Mobile Sidebar Logic
+function toggleSidebar() {
+    const sb = document.getElementById('sidebar');
+    const overlay = document.getElementById('mobile-overlay');
+    if (sb.classList.contains('open')) {
+        sb.classList.remove('open');
+        overlay.style.display = 'none';
+    } else {
+        sb.classList.add('open');
+        overlay.style.display = 'block';
+    }
+}
 
 function updateClock() {
     const now = new Date();
@@ -56,7 +69,7 @@ document.getElementById('login-form').addEventListener('submit', (e) => {
     const u = document.getElementById('username').value;
     if(u) {
         state.user = u;
-        localStorage.setItem('eclipse_user', u);
+        localStorage.setItem('infinity_user', u);
         enterApp();
     }
 });
@@ -68,13 +81,15 @@ function enterApp() {
     renderTasks();
     updateStats();
 }
-function logout() { localStorage.removeItem('eclipse_user'); location.reload(); }
+function logout() { localStorage.removeItem('infinity_user'); location.reload(); }
 
 function setView(id) {
     ['dashboard','scheduler','analytics'].forEach(v => document.getElementById('view-'+v).classList.add('hidden'));
     document.getElementById('view-'+id).classList.remove('hidden');
-    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-    event.currentTarget.classList.add('active');
+    
+    // Auto close sidebar on mobile
+    if(window.innerWidth <= 768) toggleSidebar();
+    
     if(id === 'analytics') renderAnalyticsCharts();
 }
 
@@ -239,7 +254,7 @@ function renderAnalyticsCharts() {
                 backgroundColor: ['#29b6f6', '#ab47bc', '#00e676']
             }]
         },
-        options: { plugins: { legend: { labels: { color: 'white' } } } }
+        options: { plugins: { legend: { labels: { color: 'white' } } }, maintainAspectRatio: false }
     });
 
     const ctx2 = document.getElementById('velocityChart').getContext('2d');
@@ -256,6 +271,7 @@ function renderAnalyticsCharts() {
             }]
         },
         options: {
+            maintainAspectRatio: false,
             scales: { y: { ticks: { color: '#94a3b8' } }, x: { ticks: { color: '#94a3b8' } } },
             plugins: { legend: { display: false } }
         }
@@ -298,6 +314,6 @@ function generateSchedule(mode) {
 }
 
 function save() { 
-    localStorage.setItem('eclipse_tasks', JSON.stringify(state.tasks));
-    localStorage.setItem('eclipse_history', JSON.stringify(state.history));
+    localStorage.setItem('infinity_tasks', JSON.stringify(state.tasks));
+    localStorage.setItem('infinity_history', JSON.stringify(state.history));
 }
