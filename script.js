@@ -11,18 +11,19 @@ document.addEventListener('DOMContentLoaded', () => {
     if(state.user) enterApp();
     setInterval(updateClock, 1000);
     updateHeatmap();
+    
+    // Check if a timer was running before the page closed
+    const runningTask = state.tasks.find(t => t.lastStartedAt);
+    if (runningTask) {
+        startTimer(runningTask.id);
+    }
 });
 
 function toggleSidebar() {
     const sb = document.getElementById('sidebar');
     const ov = document.getElementById('mobile-overlay');
-    if (sb.classList.contains('open')) {
-        sb.classList.remove('open');
-        ov.style.display = 'none';
-    } else {
-        sb.classList.add('open');
-        ov.style.display = 'block';
-    }
+    sb.classList.toggle('open');
+    ov.style.display = sb.classList.contains('open') ? 'block' : 'none';
 }
 
 function updateClock() {
@@ -43,32 +44,92 @@ function toggleZenMode() {
     const zen = document.getElementById('view-zen');
     const app = document.getElementById('app-screen');
     
-    if (zen.classList.contains('hidden')) {
-        zen.classList.remove('hidden');
-        app.classList.add('hidden');
-        if(activeTimer) {
-            const t = state.tasks.find(x => x.id === activeTimer);
-            if(t) {
-                document.getElementById('zen-active-container').classList.remove('hidden');
-                document.getElementById('zen-task-name').innerText = t.text;
-            }
-        }
-    } else {
-        zen.classList.add('hidden');
-        app.classList.remove('hidden');
+    zen.classList.toggle('hidden');
+    app.classList.toggle('hidden');
+
+    if (!zen.classList.contains('hidden') && activeTimer) {
+        const t = state.tasks.find(x => x.id === activeTimer);
+        updateZenUI(t);
     }
 }
+
+// --- TIMER PERSISTENCE LOGIC ---
+
+function toggleTimer(id) {
+    if(activeTimer === id) stopTimer();
+    else {
+        if(activeTimer) stopTimer();
+        startTimer(id);
+    }
+}
+
+function startTimer(id) {
+    const t = state.tasks.find(x => x.id === id);
+    if(!t) return;
+
+    activeTimer = id;
+    // Store the exact moment the timer started
+    if (!t.lastStartedAt) t.lastStartedAt = Date.now();
+    
+    timerInt = setInterval(() => {
+        renderTasks(); 
+        if(!document.getElementById('view-zen').classList.contains('hidden')) {
+            updateZenUI(t);
+        }
+    }, 1000);
+    
+    save();
+    renderTasks();
+}
+
+function stopTimer() {
+    if (activeTimer) {
+        const t = state.tasks.find(x => x.id === activeTimer);
+        if (t && t.lastStartedAt) {
+            // Calculate how many seconds passed since start
+            const elapsedSinceStart = Math.floor((Date.now() - t.lastStartedAt) / 1000);
+            t.elapsed += elapsedSinceStart;
+            delete t.lastStartedAt; // Clear the start marker
+        }
+    }
+    clearInterval(timerInt);
+    activeTimer = null;
+    document.getElementById('zen-active-container').classList.add('hidden');
+    save();
+    renderTasks();
+}
+
+function getLiveElapsed(t) {
+    let total = t.elapsed;
+    if (t.lastStartedAt) {
+        total += Math.floor((Date.now() - t.lastStartedAt) / 1000);
+    }
+    return total;
+}
+
+function updateZenUI(t) {
+    const container = document.getElementById('zen-active-container');
+    const timerLabel = document.getElementById('zen-task-timer');
+    const nameLabel = document.getElementById('zen-task-name');
+    
+    container.classList.remove('hidden');
+    nameLabel.innerText = t.text;
+    timerLabel.innerText = fmtTime(getLiveElapsed(t));
+}
+
+function fmtTime(s) {
+    const m = Math.floor(s/60).toString().padStart(2,'0');
+    const sec = (s%60).toString().padStart(2,'0');
+    return `${m}:${sec}`;
+}
+
+// --- END TIMER LOGIC ---
 
 function toggleAudio(checkbox) {
     const container = document.getElementById('audio-container');
     const visualizer = document.getElementById('audio-visuals');
-    if (checkbox.checked) {
-        container.classList.remove('hidden');
-        visualizer.classList.remove('hidden');
-    } else {
-        container.classList.add('hidden');
-        visualizer.classList.add('hidden');
-    }
+    container.classList.toggle('hidden', !checkbox.checked);
+    visualizer.classList.toggle('hidden', !checkbox.checked);
 }
 
 document.getElementById('login-form').addEventListener('submit', (e) => {
@@ -88,14 +149,18 @@ function enterApp() {
     renderTasks();
     updateStats();
 }
+
 function logout() { localStorage.removeItem('ethereal_user'); location.reload(); }
 
 function setView(id) {
     ['dashboard','scheduler','analytics'].forEach(v => document.getElementById('view-'+v).classList.add('hidden'));
     document.getElementById('view-'+id).classList.remove('hidden');
     
+    // Update active nav state
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+
     if(window.innerWidth <= 768) toggleSidebar();
-    
     if(id === 'analytics') renderAnalyticsCharts();
 }
 
@@ -125,6 +190,7 @@ function addTask() {
 function toggleTask(id) {
     const t = state.tasks.find(x => x.id === id);
     if(t) {
+        if(!t.completed && activeTimer === id) stopTimer();
         t.completed = !t.completed;
         if(t.completed) try { confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } }); } catch(e){}
         updateHistory(t.date);
@@ -136,8 +202,8 @@ function toggleTask(id) {
 
 function deleteTask(id) {
     const t = state.tasks.find(x => x.id === id);
-    state.tasks = state.tasks.filter(x => x.id !== id);
     if(activeTimer === id) stopTimer();
+    state.tasks = state.tasks.filter(x => x.id !== id);
     if(t) updateHistory(t.date);
     save();
     renderTasks();
@@ -150,46 +216,6 @@ function updateHistory(date) {
     state.history[date] = { done, total: dayTasks.length };
 }
 
-function toggleTimer(id) {
-    if(activeTimer === id) stopTimer();
-    else {
-        if(activeTimer) stopTimer();
-        startTimer(id);
-    }
-}
-
-function startTimer(id) {
-    activeTimer = id;
-    timerInt = setInterval(() => {
-        const t = state.tasks.find(x => x.id === id);
-        if(t) {
-            t.elapsed++;
-            
-            const zenTime = document.getElementById('zen-task-timer');
-            if(zenTime && !document.getElementById('view-zen').classList.contains('hidden')) {
-                zenTime.innerText = fmtTime(t.elapsed);
-                document.getElementById('zen-active-container').classList.remove('hidden');
-                document.getElementById('zen-task-name').innerText = t.text;
-            }
-        }
-    }, 1000);
-    renderTasks();
-}
-
-function stopTimer() {
-    clearInterval(timerInt);
-    activeTimer = null;
-    document.getElementById('zen-active-container').classList.add('hidden');
-    save();
-    renderTasks();
-}
-
-function fmtTime(s) {
-    const m = Math.floor(s/60).toString().padStart(2,'0');
-    const sec = (s%60).toString().padStart(2,'0');
-    return `${m}:${sec}`;
-}
-
 function renderTasks() {
     const list = document.getElementById('task-list');
     list.innerHTML = '';
@@ -198,12 +224,12 @@ function renderTasks() {
 
     state.tasks.forEach(t => {
         const isRunning = activeTimer === t.id;
+        const currentElapsed = getLiveElapsed(t);
+        const pct = Math.min((currentElapsed / t.duration) * 100, 100);
         const icon = isRunning ? 'fa-pause' : 'fa-play';
-        const activeClass = isRunning ? 'active-timer' : '';
-        const pct = Math.min((t.elapsed / t.duration) * 100, 100);
 
         list.innerHTML += `
-            <li class="task-item ${t.completed ? 'done' : ''} ${activeClass}">
+            <li class="task-item ${t.completed ? 'done' : ''} ${isRunning ? 'active-timer' : ''}">
                 <div class="task-meta">
                     <div class="task-title">${t.text}</div>
                     <div class="meta-row">
@@ -278,8 +304,11 @@ function renderAnalyticsCharts() {
     renderCalendar();
 }
 
+function updateHeatmap() { renderCalendar(); }
+
 function renderCalendar() {
     const grid = document.getElementById('calendar-grid');
+    if(!grid) return;
     grid.innerHTML = '';
     for (let i = 29; i >= 0; i--) {
         const d = new Date(); d.setDate(d.getDate() - i);
@@ -292,23 +321,49 @@ function renderCalendar() {
     }
 }
 
+// --- IMPROVED AI PLANNER ---
+
 function generateSchedule(mode) {
     const templates = {
-        student: [{text:"Math", cat:"study", s:"09:00", e:"11:00"}, {text:"Gym", cat:"health", s:"17:00", e:"18:00"}],
-        dev: [{text:"Code", cat:"work", s:"10:00", e:"13:00"}, {text:"Walk", cat:"health", s:"15:00", e:"15:30"}],
-        ceo: [{text:"Strategy", cat:"work", s:"08:00", e:"10:00"}, {text:"Reading", cat:"study", s:"20:00", e:"21:00"}]
+        student: [
+            {text:"Deep Study: Core Concepts", cat:"study", s:"09:00", e:"11:30"}, 
+            {text:"Lunch & Mindfulness", cat:"health", s:"12:30", e:"13:30"},
+            {text:"Active Recall Session", cat:"study", s:"15:00", e:"16:30"}
+        ],
+        dev: [
+            {text:"Focused Coding: Module A", cat:"work", s:"10:00", e:"13:00"}, 
+            {text:"Architecture Review", cat:"work", s:"14:30", e:"16:00"},
+            {text:"Post-Code Yoga", cat:"health", s:"17:30", e:"18:15"}
+        ],
+        ceo: [
+            {text:"Strategic Planning Block", cat:"work", s:"08:00", e:"10:00"}, 
+            {text:"Stakeholder Syncs", cat:"work", s:"11:00", e:"12:30"},
+            {text:"Industry Analysis", cat:"study", s:"19:00", e:"20:00"}
+        ],
+        flow: [
+            {text:"Flow Block I: High Priority", cat:"work", s:"09:00", e:"10:30"},
+            {text:"Recovery Walk", cat:"health", s:"10:30", e:"11:00"},
+            {text:"Flow Block II: Deep Work", cat:"work", s:"11:00", e:"12:30"},
+            {text:"Skill Acquisition", cat:"study", s:"15:00", e:"16:30"}
+        ]
     };
+    
     const items = templates[mode];
     items.forEach(i => {
-        const s = new Date(`1970-01-01T${i.s}:00`); const e = new Date(`1970-01-01T${i.e}:00`);
+        const s = new Date(`1970-01-01T${i.s}:00`); 
+        const e = new Date(`1970-01-01T${i.e}:00`);
         const dur = (e - s) / 1000;
         state.tasks.push({
-            id: Date.now()+Math.random(), text: i.text, category: i.cat, start: i.s, end: i.e,
+            id: Date.now() + Math.random(), text: i.text, category: i.cat, start: i.s, end: i.e,
             duration: dur > 0 ? dur : 3600, elapsed: 0, completed: false, date: new Date().toISOString().split('T')[0]
         });
     });
+    
     state.tasks.sort((a,b) => a.start.localeCompare(b.start));
-    save(); renderTasks(); updateStats(); setView('dashboard');
+    save(); 
+    renderTasks(); 
+    updateStats(); 
+    setView('dashboard');
 }
 
 function save() { 
